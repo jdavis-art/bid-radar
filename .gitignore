@@ -1,0 +1,12 @@
+config.local.yaml
+.env
+.env.*
+data/
+logs/
+seed/
+digest/
+*.sqlite
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
