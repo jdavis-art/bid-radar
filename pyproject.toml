@@ -1,0 +1,22 @@
+[project]
+name = "bid-radar"
+version = "0.1.0"
+description = "Sweep, score, and digest public-agency solicitations for modular and affordable housing."
+requires-python = ">=3.12"
+dependencies = ["requests>=2.32", "lxml>=5.2", "pyyaml>=6.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2"]
+
+[project.scripts]
+bid-radar = "bid_radar.cli:main"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["bid_radar*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
