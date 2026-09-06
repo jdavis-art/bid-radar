@@ -63,3 +63,14 @@ def test_note_column_shows_saved_searches(tmp_path):
     md = render_markdown(d)
     assert "| federal (CAGE/SAM required); searches: All Housing, Modular |" in md
     assert "| samgov | https://x/2 |  |" in md  # samgov row: no searches, note stays empty
+
+
+def test_suspicious_zero_flag(tmp_path):
+    st = Store(tmp_path / "t.sqlite")
+    t0, t1 = _seed(st)
+    rid = st.start_run()
+    st.finish_run(rid, {"bidnet": {"rows": 0, "health": "ok"}}, None)
+    rules = Rules.from_config(load_config()["scoring"])
+    d = build_digest(st, rules, as_of=t1, since=t0)
+    assert d["suspicious"] == ["bidnet"]
+    assert "suspicious: bidnet returned 0 rows" in render_markdown(d)

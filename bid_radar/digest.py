@@ -35,6 +35,11 @@ def build_digest(store: Store, rules: Rules, as_of: dt.datetime, since: dt.datet
     low = [r for r in store.open_rows(1, as_of) if r["score"] < min_score]
     last = store.last_run() or {}
     sources = json.loads(last.get("per_source") or "{}")
+    prev = store.db.execute("select per_source from runs where finished is not null order by id desc limit 2").fetchall()
+    prev_sources = json.loads(prev[1]["per_source"]) if len(prev) > 1 else {}
+    suspicious = sorted(name for name, info in sources.items()
+                        if info.get("health") == "ok" and info.get("rows", 0) == 0
+                        and prev_sources.get(name, {}).get("rows", 0) > 0)
     return {
         "as_of": as_of.isoformat(timespec="minutes"),
         "since": since.isoformat(timespec="minutes") if since else None,
@@ -43,6 +48,7 @@ def build_digest(store: Store, rules: Rules, as_of: dt.datetime, since: dt.datet
         "new": [_slim(store, r) for r in new],
         "open": [_slim(store, r) for r in open_rest],
         "low_count": len(low),
+        "suspicious": suspicious,
     }
 
 
@@ -64,6 +70,8 @@ def render_markdown(d: dict) -> str:
     out.append("## Run")
     for name, info in sorted(d["sources"].items()):
         out.append(f"- {name}: {info.get('rows', 0)} rows, {info.get('health', '?')}")
+    for name in d.get("suspicious", []):
+        out.append(f"- suspicious: {name} returned 0 rows after returning rows last run")
     if d.get("run_error"):
         out.append(f"- error: {d['run_error']}")
     if not d["sources"]:
