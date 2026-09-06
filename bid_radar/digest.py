@@ -14,7 +14,17 @@ _COLS = ("score", "location", "title", "agency", "closing", "source", "url", "sc
 def _slim(store: Store, row: dict) -> dict:
     out = {c: row.get(c) for c in ("uid",) + _COLS}
     out["duplicates"] = store.duplicates_of(row["uid"])
+    extra = row.get("extra")
+    extra = json.loads(extra) if isinstance(extra, str) else (extra or {})
+    out["searches"] = list(extra.get("searches") or [])
     return out
+
+
+def _note(r: dict) -> str:
+    parts = [r.get("score_note") or ""]
+    if r.get("searches"):
+        parts.append("searches: " + ", ".join(r["searches"]))
+    return "; ".join(p for p in parts if p)
 
 
 def build_digest(store: Store, rules: Rules, as_of: dt.datetime, since: dt.datetime | None) -> dict:
@@ -44,7 +54,7 @@ def _table(rows: list[dict]) -> str:
     for r in rows:
         dup = f" (+{len(r['duplicates'])} dup)" if r.get("duplicates") else ""
         lines.append(f"| {r['score']} | {r['location'] or ''} | {r['title']} | {r['agency'] or ''} | "
-                     f"{(r['closing'] or '')[:16]} | {r['source']}{dup} | {r['url'] or ''} | {r['score_note'] or ''} |")
+                     f"{(r['closing'] or '')[:16]} | {r['source']}{dup} | {r['url'] or ''} | {_note(r)} |")
     return "\n".join(lines) + "\n"
 
 

@@ -30,3 +30,19 @@ def test_env_overrides(monkeypatch, root):
     cfg = load_config(root)
     assert cfg["sources"]["samgov"]["api_key"] == "abc123"
     assert cfg["output_dir"] == "D:/out"
+
+
+def test_dotenv_file_feeds_env_overrides(tmp_path, root, monkeypatch):
+    monkeypatch.delenv("SAM_API_KEY", raising=False)
+    (tmp_path / "config.yaml").write_text((root / "config.yaml").read_text(encoding="utf-8"), encoding="utf-8")
+    (tmp_path / ".env").write_text("# comment\nSAM_API_KEY = \"fromdotenv\"\nexport OTHER='x'\n", encoding="utf-8")
+    cfg = load_config(tmp_path)
+    assert cfg["sources"]["samgov"]["api_key"] == "fromdotenv"
+
+
+def test_real_env_wins_over_dotenv(tmp_path, root, monkeypatch):
+    monkeypatch.setenv("SAM_API_KEY", "fromshell")
+    (tmp_path / "config.yaml").write_text((root / "config.yaml").read_text(encoding="utf-8"), encoding="utf-8")
+    (tmp_path / ".env").write_text("SAM_API_KEY=fromdotenv\n", encoding="utf-8")
+    cfg = load_config(tmp_path)
+    assert cfg["sources"]["samgov"]["api_key"] == "fromshell"

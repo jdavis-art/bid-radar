@@ -48,3 +48,18 @@ def test_write_digest(tmp_path):
     md_path, json_path = write_digest(st, rules, tmp_path / "out", as_of=t1, since=t0)
     assert md_path.name == "bid-radar-2026-09-05.md"
     assert json.load(open(json_path, encoding="utf-8"))["as_of"] == "2026-09-05T07:00"
+
+
+def test_note_column_shows_saved_searches(tmp_path):
+    st = Store(tmp_path / "t.sqlite")
+    t0, t1 = _seed(st)
+    st.upsert(Solicitation(uid="bidnet:4", source="bidnet", source_id="4", title="Modular Workforce Housing",
+                           location="Colorado", bid_type="Federal Bids", closing=dt.datetime(2026, 9, 28, 16, 0),
+                           extra={"searches": ["All Housing", "Modular"]}), 5, "federal (CAGE/SAM required)", t1)
+    rules = Rules.from_config(load_config()["scoring"])
+    d = build_digest(st, rules, as_of=t1, since=t0)
+    row = next(r for r in d["new"] if r["uid"] == "bidnet:4")
+    assert row["searches"] == ["All Housing", "Modular"]
+    md = render_markdown(d)
+    assert "| federal (CAGE/SAM required); searches: All Housing, Modular |" in md
+    assert "| samgov | https://x/2 |  |" in md  # samgov row: no searches, note stays empty
