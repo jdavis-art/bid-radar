@@ -29,10 +29,13 @@ sources:
 scoring:
   exclude_title:
     - 'developer selection|co-developer|developer partner|ground lease|nofa|notice of funding|funding availability|rental assistance|tbra|needs assessment|study|strategy|linkage fee|software|consult|advisory|analytical|monitoring|compliance|outreach|case m|services provider|placement services|caregiving|point-in-time|encampment|abatement|demolition|deconstruction|renovation|rehabilitation|repair|stabilization|classroom|shade shelter|shed\b|casework|pharmacy|fiber optic|animal|pressure washing|bus shelter|pavement|parking|athletic|stadium|conveyance|ups system|amphitheater|flowmeter|tourist|lodging services|hearing officer|homeless outreach|substance'
+    # Added 2026-09-06 after hand-labeling 145 rows (precision 0.24 -> 0.76, recall 0.95): services, operations,
+    # program administration, trades, and non-housing 'house/home' titles.
+    - '\bservices?\b|operations?\b|operation of|administration|management|voucher|\bloans?\b|trust funds?|assistance|support program|prevention|placement|habitability|behavioral|group home|foster|dcfs|dhhs|patient|stucco|window replacement|sound insulation|quieter home|resurfacing|landscap|cleaning|restoration|remodel|water (?:system|consolidation)|infrastructure|solar|solid waste|internet|security system|furnitur|gasket|tree house|instrument house|home organiz|home buyer|mobility home|vehicle|sweeper|restaurant|event space|broker|real estate|beddown|pedestrian|\bbridge\b|shelter (?:rooms|care|program|services)|emergency shelter|mass care|single wide|set-up of|relocation'
   not_housing_title:
     - 'warehouse|well ?house|pool ?house|green ?house|school ?house|field ?house|court ?house|club ?house|guard ?house|gate ?house|pump ?house|bath ?house|in-house|open house|home ?page|home ?land|homeless(?:ness)? (?:services|outreach|count)|residential (?:land|transparency|rehab|treatment|street)|animal|housing (?:needs|element|study|assessment|authority (?:software|training))'
   housing:
-    - '\bhousing\b|\bhouses?\b(?! ?(?:keeping|hold))|\bhomes?\b|residen(?:ce|tial|t)|dwelling|apartment|modular|prefab|manufactured hous|\bcabins?\b|tiny|workforce hous|attainable|affordable hous|duplex|townho|villag|cottage|\blodg(?:e|ing)\b|dormitor|barrack|shelter|interim hous|transitional hous|\badus?\b|accessory dwelling|relocatable|man ?camp'
+    - '\bhousing\b|\bhouses?\b(?! ?(?:keeping|hold))|\bhomes?\b|residen(?:ce|tial|t)|dwelling|apartment|modular|prefab|manufactured hous|\bcabins?\b|tiny|workforce hous|attainable|affordable hous|duplex|townho|villag|cottage|\blodg(?:e|ing)\b|dormitor|barrack|interim hous|transitional hous|\badus?\b|accessory dwelling|relocatable|man ?camp'
   location_points:
     Colorado: 2
     Wyoming: 2

@@ -1,11 +1,19 @@
 import collections
 import json
 
+import yaml
+
 from bid_radar.config import load_config
 from bid_radar.model import Solicitation
 from bid_radar.scoring import Rules, score
 
-EXPECTED = {0: 4073, 1: 77, 2: 2, 3: 67, 4: 14, 5: 4}
+EXPECTED_LEGACY = {0: 4073, 1: 77, 2: 2, 3: 67, 4: 14, 5: 4}          # the 2026-09-04 port, frozen rules
+EXPECTED_CURRENT = {0: 4179, 1: 33, 3: 14, 4: 7, 5: 4}                # config.yaml after the 2026-09-06 label-driven tuning
+
+
+def _legacy_rules(fixtures):
+    with open(fixtures / "scoring-legacy.yaml", encoding="utf-8") as fh:
+        return Rules.from_config(yaml.safe_load(fh)["scoring"])
 
 
 def _load(fixtures):
@@ -19,13 +27,20 @@ def _sol(r):
 
 
 def test_distribution_matches_legacy(root, fixtures):
+    rules = _legacy_rules(fixtures)
+    dist = collections.Counter(score(_sol(r), rules)[0] for r in _load(fixtures))
+    assert dict(sorted(dist.items())) == EXPECTED_LEGACY
+
+
+def test_distribution_matches_current_config(root, fixtures):
+    """Pins the shipped config. When you tune scoring, re-derive this from the golden-set evaluation and update it here."""
     rules = Rules.from_config(load_config(root)["scoring"])
     dist = collections.Counter(score(_sol(r), rules)[0] for r in _load(fixtures))
-    assert dict(sorted(dist.items())) == EXPECTED
+    assert dict(sorted(dist.items())) == EXPECTED_CURRENT
 
 
 def test_every_row_matches_legacy_score_and_note(root, fixtures):
-    rules = Rules.from_config(load_config(root)["scoring"])
+    rules = _legacy_rules(fixtures)
     mismatches = []
     for r in _load(fixtures):
         s, note = score(_sol(r), rules)

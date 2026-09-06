@@ -1,0 +1,21 @@
+# Frozen copy of the ORIGINAL scoring rules (the 2026-09-04 legacy port). The port-fidelity tests load this,
+# so config.yaml stays free to be tuned. Do not edit.
+scoring:
+  exclude_title:
+  - developer selection|co-developer|developer partner|ground lease|nofa|notice of funding|funding availability|rental assistance|tbra|needs assessment|study|strategy|linkage fee|software|consult|advisory|analytical|monitoring|compliance|outreach|case m|services provider|placement services|caregiving|point-in-time|encampment|abatement|demolition|deconstruction|renovation|rehabilitation|repair|stabilization|classroom|shade shelter|shed\b|casework|pharmacy|fiber optic|animal|pressure washing|bus shelter|pavement|parking|athletic|stadium|conveyance|ups system|amphitheater|flowmeter|tourist|lodging services|hearing officer|homeless outreach|substance
+  not_housing_title:
+  - warehouse|well ?house|pool ?house|green ?house|school ?house|field ?house|court ?house|club ?house|guard ?house|gate ?house|pump ?house|bath ?house|in-house|open house|home ?page|home ?land|homeless(?:ness)? (?:services|outreach|count)|residential (?:land|transparency|rehab|treatment|street)|animal|housing (?:needs|element|study|assessment|authority (?:software|training))
+  housing:
+  - \bhousing\b|\bhouses?\b(?! ?(?:keeping|hold))|\bhomes?\b|residen(?:ce|tial|t)|dwelling|apartment|modular|prefab|manufactured hous|\bcabins?\b|tiny|workforce hous|attainable|affordable hous|duplex|townho|villag|cottage|\blodg(?:e|ing)\b|dormitor|barrack|shelter|interim hous|transitional hous|\badus?\b|accessory dwelling|relocatable|man ?camp
+  location_points:
+    Colorado: 2
+    Wyoming: 2
+    California: 1
+    Arizona: 1
+    Utah: 1
+    New Mexico: 1
+  boost:
+  - modular|prefab|manufactured|tiny|workforce hous|staff(?:ing)? hous|employee.{0,20}hous|interim hous|relocatable|attainable
+  federal_bid_type: Federal Bids
+  federal_note: federal (CAGE/SAM required)
+  digest_min_score: 3
