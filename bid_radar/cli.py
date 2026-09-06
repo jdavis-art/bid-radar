@@ -13,7 +13,7 @@ from .dedupe import link_duplicates
 from .digest import write_digest
 from .normalize import normalize
 from .scoring import Rules, score
-from .sources.base import NeedsCookie, NeedsKey
+from .sources.base import NeedsCookie, NeedsKey, RateLimited
 from .sources.bidnet import BidNetSource, FederalNotice
 from .sources.publicpurchase import PublicPurchaseSource
 from .sources.samgov import SamGovSource
@@ -63,10 +63,15 @@ def run_sweep(cfg: dict, sources: list | None = None, only: list[str] | None = N
         except NeedsKey as e:
             summary[src.name] = {"rows": rows, "new": new, "health": "needs_key"}
             errors.append(str(e))
+        except RateLimited as e:
+            summary[src.name] = {"rows": rows, "new": new, "health": "rate_limited"}
+            errors.append(str(e))
         except Exception as e:  # noqa: BLE001 - a source failing must not stop the sweep
             summary[src.name] = {"rows": rows, "new": new, "health": "down"}
             errors.append(f"{src.name}: {redact(repr(e))}")
             traceback.print_exc()
+        if getattr(src, "query_yield", None):
+            summary[src.name]["queries"] = dict(src.query_yield)   # per-query yield, for trimming the list later
         print(f"{src.name}: {summary[src.name]}")
     links = link_duplicates(store, store.all_rows())
     print(f"duplicate links added: {links}")
@@ -78,7 +83,9 @@ def run_sweep(cfg: dict, sources: list | None = None, only: list[str] | None = N
 def cmd_whoami(cfg, args):
     store = _store(cfg)
     for src in build_sources(cfg, store, args.only):
-        print(f"{src.name}: {src.healthcheck()}")
+        # Only SAM.gov spends quota on a health check; it stays offline unless --probe is passed.
+        status = src.healthcheck(probe=args.probe) if src.name == "samgov" else src.healthcheck()
+        print(f"{src.name}: {status}")
     return 0
 
 
@@ -147,6 +154,7 @@ def main(argv=None) -> int:
         sp = sub.add_parser(name)
         sp.add_argument("--only", type=lambda s: s.split(","), default=None)
         sp.add_argument("--since", default=None)
+        sp.add_argument("--probe", action="store_true", help="whoami: spend one SAM.gov request to test the key")
         sp.set_defaults(fn=fn)
     sp = sub.add_parser("abstract"); sp.add_argument("ids", nargs="+"); sp.set_defaults(fn=cmd_abstract)
     sp = sub.add_parser("mark"); sp.add_argument("uid"); sp.add_argument("status", choices=["new", "seen", "dismissed", "pursued"]); sp.set_defaults(fn=cmd_mark)

@@ -1,6 +1,8 @@
 """SAM.gov Opportunities API v2. Public data; needs a free api.data.gov key in SAM_API_KEY.
 Docs: https://open.gsa.gov/api/get-opportunities-public-api/
-Search 'design-build', never 'modular' alone: federal notices are written that way."""
+Search 'design-build', never 'modular' alone: federal notices are written that way.
+Personal keys allow 10 requests per day, so a 429 ends the run for this source and whoami does not
+touch the API unless asked to probe."""
 from __future__ import annotations
 
 import datetime as dt
@@ -9,7 +11,7 @@ from typing import Iterator
 
 import requests
 
-from .base import NeedsKey, HEALTH_OK, HEALTH_NEEDS_KEY, HEALTH_DOWN
+from .base import NeedsKey, RateLimited, HEALTH_OK, HEALTH_NEEDS_KEY, HEALTH_DOWN, HEALTH_KEY_PRESENT
 
 DEFAULT_URL = "https://api.sam.gov/opportunities/v2/search"
 
@@ -43,11 +45,14 @@ class SamGovSource:
         self.lookback_days = int(cfg.get("lookback_days", 7))
         self.limit = int(cfg.get("limit", 1000))
         self.last_run = last_run.date() if isinstance(last_run, dt.datetime) else last_run
+        self.query_yield: dict[str, int | str] = {}
         self.log = print
 
-    def healthcheck(self) -> str:
+    def healthcheck(self, probe: bool = False) -> str:
         if not self.api_key:
             return HEALTH_NEEDS_KEY
+        if not probe:
+            return HEALTH_KEY_PRESENT
         try:
             r = requests.get(self.url, params=build_params(self.api_key, "housing", None, ["o"],
                                                             dt.date.today() - dt.timedelta(days=1),
@@ -66,7 +71,9 @@ class SamGovSource:
         params = build_params(self.api_key, keyword, naics, self.ptypes, start, end, self.limit, offset)
         for attempt in range(3):
             r = requests.get(self.url, params=params, timeout=90)
-            if r.status_code == 429 or r.status_code >= 500:
+            if r.status_code == 429:
+                raise RateLimited(self.name, f"HTTP 429 on {keyword or naics!r}; personal keys allow 10 requests per day")
+            if r.status_code >= 500:
                 self.log(f"  samgov: HTTP {r.status_code} on {keyword or naics!r} offset {offset}, retry {attempt + 1}/3")
                 time.sleep(5 + attempt * 5)
                 continue
@@ -75,18 +82,23 @@ class SamGovSource:
             r.raise_for_status()
             return r.json()
         # Never re-raise with the response URL: it carries the api_key.
-        raise RuntimeError(f"HTTP {r.status_code} from SAM.gov after 3 attempts on {keyword or naics!r}"
-                           + (" (rate limited: personal keys allow 10 requests per day)" if r.status_code == 429 else ""))
+        raise RuntimeError(f"HTTP {r.status_code} from SAM.gov after 3 attempts on {keyword or naics!r}")
 
     def sweep(self) -> Iterator[dict]:
         if not self.api_key:
             raise NeedsKey(self.name, "set SAM_API_KEY")
         seen: set[str] = set()
+        self.query_yield = {}
         queries = [(k, None) for k in self.keywords] + [(None, n) for n in self.naics]
         for keyword, naics in queries:
+            label = keyword or naics
             offset, got = 0, 0
             while True:
-                payload = self._page(keyword, naics, offset)
+                try:
+                    payload = self._page(keyword, naics, offset)
+                except RateLimited:
+                    self.query_yield[label] = "rate_limited"
+                    raise
                 recs = parse_search(payload)
                 for rec in recs:
                     nid = rec.get("noticeId")
@@ -99,4 +111,5 @@ class SamGovSource:
                 if not recs or offset >= total:
                     break
                 time.sleep(1.0)
-            self.log(f"  samgov/{keyword or naics}: {got} new records")
+            self.query_yield[label] = got
+            self.log(f"  samgov/{label}: {got} new records")
