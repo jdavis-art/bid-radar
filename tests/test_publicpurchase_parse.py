@@ -1,5 +1,8 @@
 import json
 
+import pytest
+
+from bid_radar.sources.base import NeedsCookie
 from bid_radar.sources.publicpurchase import PublicPurchaseSource, parse_agencies, parse_bid_list
 
 BID_HTML = """
@@ -32,4 +35,5 @@ def test_parse_bid_list_extracts_rows():
 def test_healthcheck_without_cookie(tmp_path):
     src = PublicPurchaseSource({"cookie_file": str(tmp_path / "missing.txt"), "regions": ["CO"]})
     assert src.healthcheck() == "needs_cookie"
-    assert list(src.sweep()) == []
+    with pytest.raises(NeedsCookie):        # the run summary must say needs_cookie, never ok with zero rows
+        list(src.sweep())

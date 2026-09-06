@@ -1,7 +1,7 @@
 """PublicPurchase.com adapter. Verified 2026-09-04: region -> agency list is a plain GET
 (/gems/global/home/getAgenciesByRegion?region=XX); each agency's list is /gems/<slug>/global/home/nationalBidList.
-Without a vendor cookie every agency answers "No bids at this time", so this adapter reports needs_cookie
-and yields nothing rather than pretending the market is empty."""
+Without a vendor cookie every agency answers "No bids at this time", so this adapter raises NeedsCookie
+from the sweep (the run records needs_cookie) rather than pretending the market is empty."""
 from __future__ import annotations
 
 import re
@@ -12,7 +12,7 @@ import requests
 from lxml import html as lxhtml
 
 from ..cookies import cookie_header_from_curl_file, CookieFileMissing, CookieNotFound
-from .base import HEALTH_OK, HEALTH_NEEDS_COOKIE, HEALTH_DOWN
+from .base import NeedsCookie, HEALTH_OK, HEALTH_NEEDS_COOKIE, HEALTH_DOWN
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
@@ -62,13 +62,15 @@ class PublicPurchaseSource:
         self.bid_pick = re.compile(cfg.get("bid_pick") or "housing", re.I)
         self.pause = float(cfg.get("pause_seconds", 1.0))
         self._session = None
+        self._cookie_error = ""
         self.log = print
 
     def _s(self) -> requests.Session | None:
         if self._session is None:
             try:
                 cookie = cookie_header_from_curl_file(self.cfg.get("cookie_file", "~/.publicpurchase-curl.txt"))
-            except (CookieFileMissing, CookieNotFound):
+            except (CookieFileMissing, CookieNotFound) as e:
+                self._cookie_error = str(e)
                 return None
             s = requests.Session()
             s.headers.update({"User-Agent": UA, "Cookie": cookie, "Accept": "*/*"})
@@ -90,8 +92,7 @@ class PublicPurchaseSource:
     def sweep(self) -> Iterator[dict]:
         s = self._s()
         if s is None:
-            self.log("  publicpurchase: no vendor cookie; skipping")
-            return
+            raise NeedsCookie(self.name, self._cookie_error or "no vendor cookie")
         for region in self.regions:
             r = s.get(f"{self.base}/gems/global/home/getAgenciesByRegion", params={"region": region}, timeout=60)
             if r.status_code != 200:
