@@ -44,8 +44,8 @@ messages name the file path only; cookie values are never printed or
 logged.
 
 PublicPurchase requires a vendor registration before any agency shows
-bids. Without one the adapter reports `needs_cookie` and yields nothing
-rather than pretending the market is empty.
+bids. Without one the source reports `needs_cookie` in the run summary
+and the digest rather than pretending the market is empty.
 
 ## SAM.gov key
 
@@ -60,6 +60,13 @@ SAM_API_KEY=your-key-here
 
 The real environment wins over `.env` when both are set. Without a key
 the source reports `needs_key` and the sweep continues.
+
+A personal SAM.gov key allows 10 requests per day. The default sweep
+spends 9 (one per keyword and one per NAICS code). A 429 ends the
+SAM.gov portion of that run with health `rate_limited`, keeps whatever
+arrived before it, and skips the remaining queries so the budget is not
+spent on refusals. Each run records the per-query yield so the list can
+be trimmed after a week of data.
 
 ## Local configuration
 
@@ -88,7 +95,7 @@ All commands run through the console script installed in the venv.
 
 | Command | What it does |
 | --- | --- |
-| `bid-radar whoami` | Health check every source: `ok`, `needs_cookie`, `needs_key`, or `down`. |
+| `bid-radar whoami [--probe]` | Health check every source: `ok`, `needs_cookie`, `needs_key`, `key present`, or `down`. SAM.gov is not called unless `--probe` is passed, since each call spends daily quota. |
 | `bid-radar sweep [--only bidnet,samgov]` | Sweep the sources, normalize, score, upsert into SQLite, link duplicates, record the run, then write the digest. |
 | `bid-radar rescore` | Re-run the scorer over every stored row after a rule change. |
 | `bid-radar digest [--since YYYY-MM-DD]` | Rewrite today's digest without sweeping. |
