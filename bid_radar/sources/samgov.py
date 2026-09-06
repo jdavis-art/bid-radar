@@ -74,8 +74,9 @@ class SamGovSource:
                 raise NeedsKey(self.name, f"HTTP {r.status_code} from SAM.gov")
             r.raise_for_status()
             return r.json()
-        r.raise_for_status()
-        return {}
+        # Never re-raise with the response URL: it carries the api_key.
+        raise RuntimeError(f"HTTP {r.status_code} from SAM.gov after 3 attempts on {keyword or naics!r}"
+                           + (" (rate limited: personal keys allow 10 requests per day)" if r.status_code == 429 else ""))
 
     def sweep(self) -> Iterator[dict]:
         if not self.api_key:

@@ -38,5 +38,10 @@ def cookie_header_from_curl_file(path: Path | str) -> str:
     raise CookieNotFound(f"No Cookie header found in {path}. " + HANDOFF.format(path=path))
 
 
+_SECRET_PARAM = re.compile(r"((?:api_?key|token|secret|password)\s*=\s*)[^&\s'\"]+", re.I)
+
+
 def redact(text: str) -> str:
-    return re.sub(r"((?:set-)?cookie:\s*).*", r"\1[redacted]", text or "", flags=re.I)
+    """Hide cookie header values and key/token parameters in any text bound for a log or the store."""
+    out = re.sub(r"((?:set-)?cookie:\s*).*", r"\1[redacted]", text or "", flags=re.I)
+    return _SECRET_PARAM.sub(r"\1[redacted]", out)

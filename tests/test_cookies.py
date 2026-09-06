@@ -34,3 +34,11 @@ def test_redact_hides_cookie_values():
     assert redact("cookie: JSESSIONID=abc; x=y") == "cookie: [redacted]"
     assert redact("Set-Cookie: a=b") == "Set-Cookie: [redacted]"
     assert redact("plain text") == "plain text"
+
+
+def test_redact_hides_api_keys_in_urls_and_errors():
+    err = "429 Client Error for url: https://api.sam.gov/x?api_key=SAM-abc-123&postedFrom=09%2F04%2F2026&title=housing"
+    out = redact(err)
+    assert "SAM-abc-123" not in out
+    assert "api_key=[redacted]&postedFrom=09%2F04%2F2026" in out
+    assert redact("SAM_API_KEY=SAM-abc-123 was rejected") == "SAM_API_KEY=[redacted] was rejected"
