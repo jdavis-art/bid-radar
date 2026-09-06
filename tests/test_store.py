@@ -65,3 +65,16 @@ def test_duplicates(tmp_path):
     st.link_duplicate("bidnet:1", "samgov:9", "title+closing")  # idempotent
     assert st.duplicates_of("bidnet:1") == ["samgov:9"]
     assert st.duplicates_of("samgov:9") == ["bidnet:1"]
+
+
+def test_last_successful_run_per_source(tmp_path):
+    st = Store(tmp_path / "t.sqlite")
+    rid = st.start_run()
+    st.finish_run(rid, {"bidnet": {"rows": 10, "health": "ok"}, "samgov": {"rows": 0, "health": "needs_key"}},
+                  "samgov: API key missing")
+    assert st.last_successful_run() is None                 # the run as a whole had an error
+    assert st.last_successful_run("bidnet") is not None     # but bidnet itself was fine
+    assert st.last_successful_run("samgov") is None         # samgov never succeeded
+    rid2 = st.start_run()
+    st.finish_run(rid2, {"samgov": {"rows": 3, "health": "ok"}}, None)
+    assert st.last_successful_run("samgov") is not None

@@ -67,6 +67,7 @@ class SamGovSource:
         for attempt in range(3):
             r = requests.get(self.url, params=params, timeout=90)
             if r.status_code == 429 or r.status_code >= 500:
+                self.log(f"  samgov: HTTP {r.status_code} on {keyword or naics!r} offset {offset}, retry {attempt + 1}/3")
                 time.sleep(5 + attempt * 5)
                 continue
             if r.status_code in (401, 403):

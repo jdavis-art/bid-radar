@@ -30,7 +30,7 @@ def build_sources(cfg: dict, store: Store, only: list[str] | None = None) -> lis
     if sc["bidnet"].get("enabled", True):
         out.append(BidNetSource(sc["bidnet"]))
     if sc["samgov"].get("enabled", True):
-        out.append(SamGovSource(sc["samgov"], last_run=store.last_successful_run()))
+        out.append(SamGovSource(sc["samgov"], last_run=store.last_successful_run("samgov")))
     if sc["publicpurchase"].get("enabled", True):
         out.append(PublicPurchaseSource(sc["publicpurchase"]))
     if only:

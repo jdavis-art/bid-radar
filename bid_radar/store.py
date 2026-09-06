@@ -108,10 +108,19 @@ class Store:
         r = self.db.execute("select * from runs order by id desc limit 1").fetchone()
         return dict(r) if r else None
 
-    def last_successful_run(self) -> dt.datetime | None:
-        r = self.db.execute("select started from runs where finished is not null and error is null "
-                            "order by id desc limit 1").fetchone()
-        return dt.datetime.fromisoformat(r["started"]) if r else None
+    def last_successful_run(self, source: str | None = None) -> dt.datetime | None:
+        """Start time of the newest clean run. With a source name, the newest run in which that
+        source reported health 'ok', regardless of how the other sources fared."""
+        if source is None:
+            r = self.db.execute("select started from runs where finished is not null and error is null "
+                                "order by id desc limit 1").fetchone()
+            return dt.datetime.fromisoformat(r["started"]) if r else None
+        for r in self.db.execute("select started, per_source from runs where finished is not null "
+                                 "order by id desc").fetchall():
+            info = (json.loads(r["per_source"] or "{}")).get(source) or {}
+            if info.get("health") == "ok":
+                return dt.datetime.fromisoformat(r["started"])
+        return None
 
     # ------------------------------------------------------------ duplicates
     def link_duplicate(self, uid_a: str, uid_b: str, reason: str):
