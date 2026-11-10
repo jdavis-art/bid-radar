@@ -53,7 +53,27 @@ def _publicpurchase(raw: dict) -> Solicitation:
     )
 
 
-_NORMALIZERS = {"bidnet": _bidnet, "samgov": _samgov, "publicpurchase": _publicpurchase}
+def _prop123(raw: dict) -> Solicitation:
+    # Sponsor names ("... Services", "... Management") would trip the title exclusions, so the sponsor
+    # and project go in agency and the title is built from fixed words.
+    kind = "selected" if "selection" in raw.get("list_label", "").lower() else "applied"
+    dollars = raw.get("awarded") or raw.get("requested") or 0
+    units = raw.get("units")
+    title = (f"Affordable housing, {units} units {raw.get('purpose', '')}".strip()
+             + f" ({kind}, ${dollars:,}) - {raw.get('list_label', '')}")
+    contact = ", ".join(x for x in (raw.get("contact"), raw.get("phone"), raw.get("email")) if x)
+    return Solicitation(
+        uid=f"prop123:{raw['slug']}:{raw['email'].lower()}:{units}", source="prop123",
+        source_id=f"{raw['slug']}:{raw['email'].lower()}:{units}", title=title,
+        agency=raw.get("who", ""), location="Colorado", bid_type="Award list",
+        published=parse_date(raw.get("posted")), closing=parse_datetime(raw.get("closing")),
+        url=raw.get("url", ""), blurb=f"{raw.get('who', '')}. Contact: {contact}", mandatory_prebid=False,
+        extra={"list": raw.get("list_label", ""), "list_date": raw.get("list_date"), "requested": raw.get("requested"),
+               "awarded": raw.get("awarded"), "contact": contact},
+    )
+
+
+_NORMALIZERS = {"bidnet": _bidnet, "samgov": _samgov, "publicpurchase": _publicpurchase, "prop123": _prop123}
 
 
 def normalize(source: str, raw: dict) -> Solicitation:

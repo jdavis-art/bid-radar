@@ -4,7 +4,10 @@ A local, scheduled Python pipeline that sweeps public-agency solicitation
 sources for modular and affordable-housing work, normalizes every record
 into one schema, dedupes across sources, scores each record against a
 YAML rule set, and writes a daily markdown and JSON digest. Sources in
-v1: BidNet Direct, PublicPurchase, and SAM.gov. The digest is what a
+v1: BidNet Direct, PublicPurchase, and SAM.gov, plus Colorado Prop 123
+award lists (applicants and selections, read from the fund's public
+WordPress media API; each row is a lead with a 90-day call window,
+not a bid). The digest is what a
 person triages; nothing here writes to a CRM.
 
 ## Install

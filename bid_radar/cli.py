@@ -15,6 +15,7 @@ from .normalize import normalize
 from .scoring import Rules, score
 from .sources.base import NeedsCookie, NeedsKey, RateLimited
 from .sources.bidnet import BidNetSource, FederalNotice
+from .sources.prop123 import Prop123Source
 from .sources.publicpurchase import PublicPurchaseSource
 from .sources.samgov import SamGovSource
 from .store import Store
@@ -33,6 +34,8 @@ def build_sources(cfg: dict, store: Store, only: list[str] | None = None) -> lis
         out.append(SamGovSource(sc["samgov"], last_run=store.last_successful_run("samgov")))
     if sc["publicpurchase"].get("enabled", True):
         out.append(PublicPurchaseSource(sc["publicpurchase"]))
+    if sc.get("prop123", {}).get("enabled", False):
+        out.append(Prop123Source(sc["prop123"]))
     if only:
         out = [s for s in out if s.name in only]
     return out

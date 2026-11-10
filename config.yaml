@@ -26,6 +26,13 @@ sources:
     ptypes: ["o", "p", "k"]     # solicitation, presolicitation, combined synopsis
     lookback_days: 7
     limit: 1000
+  prop123:
+    # Colorado Prop 123 fund: applicant and selection lists, one lead per row. Awards, not bids.
+    enabled: true
+    base_url: https://coloradoaffordablehousingfinancingfund.com
+    searches: ["Selections", "Applications"]
+    min_date: "2025-07-01"      # FY25-26 onward; older lists are stale leads
+    call_window_days: 90        # a row leaves the open digest this long after its list posts
 scoring:
   exclude_title:
     - 'developer selection|co-developer|developer partner|ground lease|nofa|notice of funding|funding availability|rental assistance|tbra|needs assessment|study|strategy|linkage fee|software|consult|advisory|analytical|monitoring|compliance|outreach|case m|services provider|placement services|caregiving|point-in-time|encampment|abatement|demolition|deconstruction|renovation|rehabilitation|repair|stabilization|classroom|shade shelter|shed\b|casework|pharmacy|fiber optic|animal|pressure washing|bus shelter|pavement|parking|athletic|stadium|conveyance|ups system|amphitheater|flowmeter|tourist|lodging services|hearing officer|homeless outreach|substance'

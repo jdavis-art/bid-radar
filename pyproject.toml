@@ -3,7 +3,7 @@ name = "bid-radar"
 version = "0.1.0"
 description = "Sweep, score, and digest public-agency solicitations for modular and affordable housing."
 requires-python = ">=3.12"
-dependencies = ["requests>=2.32", "lxml>=5.2", "pyyaml>=6.0"]
+dependencies = ["requests>=2.32", "lxml>=5.2", "pyyaml>=6.0", "pypdf[crypto]>=5.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.2"]
